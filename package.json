@@ -1,0 +1,35 @@
+{
+  "name": "phupha_backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/prompt": "^5.2.6",
+    "@fontsource/roboto": "^5.2.5",
+    "@mdi/font": "^7.4.47",
+    "@tailwindcss/vite": "^4.1.8",
+    "axios": "^1.9.0",
+    "dayjs": "^1.11.13",
+    "pinia": "^3.0.2",
+    "sweetalert2": "^11.22.0",
+    "vee-validate": "^4.15.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.1",
+    "vuetify": "^3.8.0-beta.0",
+    "yup": "^1.6.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.3",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.4",
+    "sass": "^1.89.1",
+    "sass-loader": "^16.0.5",
+    "tailwindcss": "^4.1.8",
+    "vite": "^6.3.5"
+  }
+}
