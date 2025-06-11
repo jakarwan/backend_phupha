@@ -1,36 +1,37 @@
 <template>
   <!-- <v-container> -->
   <v-card class="min-h-[850px] mt-4 mx-4">
-    <div class="text-xl font-bold ma-4">รายการลูกค้า</div>
+    <div class="text-xl font-bold ma-4">รายการสั่งซื้อสินค้า</div>
     <v-card-title>
       <v-row>
         <v-col md="4">
           <v-text-field
             v-model="search"
-            label="ค้นหาลูกค้า"
+            label="ค้นหารายการสั่งซื้อ"
             hide-details
             variant="outlined"
             density="comfortable"
+            placeholder="รหัสสั่งซื้อ, ชื่อผู้ส่ง"
           />
         </v-col>
-        <v-col md="3">
+        <!-- <v-col md="3">
           <v-select
-            v-model="province_id"
-            :items="provinces"
-            label="จังหวัด"
-            item-title="name_th"
-            item-value="id"
+            v-model="type_id"
+            :items="types"
+            label="ประเภทสินค้า"
+            item-title="type_name"
+            item-value="type_id"
             variant="outlined"
             density="comfortable"
             clearable
           />
-        </v-col>
+        </v-col> -->
       </v-row>
       <div class="float-end">
         <v-btn @click="dialogRef.isOpen = true" color="indigo-darken-3"
-          >เพิ่มลูกค้า</v-btn
+          >สั่งซื้อสินค้า</v-btn
         >
-        <AddCustomerDialog ref="dialogRef" :provinces="provinces" @customer-added="handleCustomerAdded" />
+        <AddOrderDialog ref="dialogRef" :products="products" :customers="customers" @order-added="handleProductAdded" />
       </div>
     </v-card-title>
     <!-- :sort-by="sortBy" -->
@@ -40,36 +41,42 @@
         v-model:page="page"
         :items-length="total"
         :headers="headers"
-        :items="customers"
+        :items="orders"
         :loading="loading"
         :search="search"
         class="elevation-1"
         :items-per-page-options="[10, 50, 100]"
-        @update:options="loadCustomers"
+        @update:options="loadOrders"
       >
         <template #item.index="{ index }">
           {{ index + 1 }}
+        </template>
+        <template #item.fullname="{ item }">
+          {{ item.first_name }} {{ item.family_name }}
+        </template>
+        <template #item.oparetor="{ item }">
+          {{ item.user_first_name }} {{ item.user_family_name }}
         </template>
         <template #item.created_at="{ item }">
           {{ dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss") }}
         </template>
         <template #item.action="{ item }">
+                      <!-- @click="openHistory(item)" -->
           <v-btn
-            @click="editCustomer(item)"
+
             size="x-small"
             class="mx-2"
             color="#5865f2"
-            ><v-icon>mdi-pencil</v-icon></v-btn
+            ><v-icon>mdi-history</v-icon></v-btn
           >
-          <v-btn @click="delCustomer(item)" size="x-small" color="error"
+          <!-- @click="delProduct(item)" -->
+          <v-btn  size="x-small" color="error"
             ><v-icon>mdi-delete</v-icon></v-btn
           >
         </template>
       </v-data-table-server>
-      <EditCustomerDialog
+      <HistoryOrderDialog
         ref="dialogEditRef"
-        :provinces="provinces"
-        @updated="handleCustomerUpdated"
       />
     </div>
   </v-card>
@@ -79,13 +86,13 @@
 <script setup>
 import { onMounted, ref, watch } from "vue";
 import api from "@/plugins/axios";
-import AddCustomerDialog from "@/components/customer/AddCustomerDialog.vue";
-import EditCustomerDialog from "@/components/customer/EditCustomerDialog.vue";
+import AddOrderDialog from "@/components/order/AddOrderDialog.vue";
+import HistoryOrderDialog from "@/components/order/HistoryOrderDialog.vue";
 import dayjs from "dayjs";
 import { alertError, alertSuccess, alertDelete } from "@/utils/alert";
 
 // --- state
-const customers = ref([]);
+const orders = ref([]);
 const total = ref(0);
 const loading = ref(false);
 const page = ref(1);
@@ -93,25 +100,26 @@ const itemsPerPage = ref(10);
 const search = ref("");
 const dialogRef = ref();
 const dialogEditRef = ref();
-const provinces = ref([]);
-const province_id = ref(null);
-const selectedCustomer = ref(null);
+const products = ref([]);
+const customers = ref([]);
+// const type_id = ref(null);
+const selectedOrders = ref(null);
 // const sortBy = ref([{ key: "created_at", order: "desc" }]);
 
-const editCustomer = (item) => {
+const openHistory = (item) => {
   dialogEditRef.value.open(item);
 };
 
-const delCustomer = async (item) => {
+const delProduct = async (item) => {
   const confirm = await alertDelete(item);
   if (confirm.isConfirmed) {
     try {
-      const res = await api.delete("/customers/delete", {
+      const res = await api.delete("/orders/delete", {
         data: { id: item.id },
       });
 
       alertSuccess(res.data.msg || "ลบข้อมูลเรียบร้อยแล้ว");
-      loadCustomers();
+      loadOrders();
     } catch (err) {
       alertError(err.response?.data?.msg || "เกิดข้อผิดพลาด");
     }
@@ -121,36 +129,38 @@ const delCustomer = async (item) => {
 // --- headers
 const headers = [
   { title: "#", key: "index", sortable: false },
-  { title: "รหัสลูกค้า", key: "member_id", sortable: false },
+  { title: "รหัสสั่งซื้อ", key: "order_id", sortable: false },
   {
-    title: "ชื่อ-สกุล",
-    key: "full_name",
+    title: "ชื่อผู้สั่ง",
+    key: "fullname",
     sortable: false,
-    value: (item) => `${item.first_name} ${item.family_name}`,
   },
-  { title: "เบอร์โทร", key: "phone", sortable: false },
+  { title: "เบอร์โทรศัพท์", key: "phone", sortable: false },
   { title: "จังหวัด", key: "province", sortable: false },
-  { title: "วันที่สร้าง", key: "created_at", sortable: false },
+  { title: "ราคารวม", key: "total_price", sortable: false, align: "end" },
+  { title: "คะแนนรวม", key: "point", sortable: false, align: "center" },
+  { title: "ผู้ทำรายการ", key: "oparetor", sortable: false, align: "center" },
+  { title: "วันที่สร้าง", key: "created_at", sortable: false, align: "center" },
   { title: "action", key: "action", sortable: false, align: "center" },
 ];
 
 // --- load data from API
-const loadCustomers = async () => {
+const loadOrders = async () => {
   loading.value = true;
 
   try {
-    const { data } = await api.get("/customers/list", {
+    const { data } = await api.get("/orders/list", {
       params: {
         page: page.value,
         per_page: itemsPerPage.value,
         search: search.value ? search.value : undefined,
-        province_id: province_id.value,
+        // type_id: type_id.value,
         // sort_by: sortBy.value[0]?.key || "",
         // sort_order: sortBy.value[0]?.order || "",
       },
     });
 
-    customers.value = data.data;
+    orders.value = data.data;
     total.value = data.pagination.total;
   } catch (error) {
     alertError(error.response.data.msg);
@@ -159,13 +169,13 @@ const loadCustomers = async () => {
   }
 };
 
-const loadProvinces = async () => {
+const loadProducts = async () => {
   loading.value = true;
 
   try {
-    const { data } = await api.get("/address/provinces");
+    const { data } = await api.get("/products/list");
 
-    provinces.value = data;
+    products.value = data.data;
   } catch (e) {
     console.error("โหลดข้อมูลไม่สำเร็จ", e);
   } finally {
@@ -173,21 +183,32 @@ const loadProvinces = async () => {
   }
 };
 
-const handleCustomerUpdated = (updatedData) => {
-  loadCustomers();
+const loadCustomers = async () => {
+  loading.value = true;
+
+  try {
+    const { data } = await api.get("/customers/list");
+
+    customers.value = data.data;
+  } catch (e) {
+    console.error("โหลดข้อมูลไม่สำเร็จ", e);
+  } finally {
+    loading.value = false;
+  }
 };
 
-const handleCustomerAdded = (addedData) => {
-  loadCustomers();
-};
+const handleProductAdded = async (newProduct) => {
+  await loadOrders()
+}
 
 // --- watch search trigger load
-watch(province_id, () => {
-  page.value = 1; // reset page
-  loadCustomers();
-});
+// watch(type_id, () => {
+//   page.value = 1; // reset page
+//   loadProducts();
+// });
 
 onMounted(() => {
-  loadProvinces();
+  loadProducts();
+  loadCustomers();
 });
 </script>

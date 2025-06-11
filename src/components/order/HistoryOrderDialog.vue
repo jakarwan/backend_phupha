@@ -1,0 +1,386 @@
+<template>
+  <v-dialog v-model="isOpen" fullscreen>
+    <v-card>
+      <v-card-title>
+        <span>สั่งซื้อสินค้า</span>
+      </v-card-title>
+
+      <v-divider />
+
+      <Form :validation-schema="schema" @submit="onSubmit" ref="formRef">
+        <v-card-text>
+          <v-row>
+            <v-col cols="12" sm="12" md="12" lg="12">
+              <Field name="member_id" v-slot="{ field, errorMessage }">
+                <v-select
+                  :items="props.customers"
+                  label="ชื่อลูกค้า"
+                  v-bind="field"
+                  :item-title="
+                    (item) => item.first_name + ' ' + item.family_name
+                  "
+                  item-value="id"
+                  :error-messages="errorMessage"
+                  required
+                  variant="outlined"
+                  clearable
+                ></v-select>
+              </Field>
+            </v-col>
+          </v-row>
+
+          <v-list-subheader v-if="carts.length > 0">
+            ตะกร้าสินค้า ({{ carts.length }} รายการ)
+          </v-list-subheader>
+
+          <v-row class="max-h-[300px] overflow-auto" v-if="carts.length > 0">
+            <v-col cols="12" v-for="(item, index) in carts" :key="index">
+              <v-card elevation="2" class="pa-3">
+                <v-row align="center">
+                  <!-- ลำดับ -->
+                  <v-col cols="1" class="text-center">
+                    <v-chip color="primary" size="small">{{
+                      index + 1
+                    }}</v-chip>
+                  </v-col>
+
+                  <!-- รูปภาพ -->
+                  <v-col cols="2">
+                    <v-img
+                      width="60px"
+                      height="60px"
+                      :src="item.image_url"
+                      contain
+                      class="rounded"
+                    ></v-img>
+                  </v-col>
+
+                  <!-- ข้อมูลสินค้า -->
+                  <v-col cols="3">
+                    <div class="font-weight-bold">{{ item.name }}</div>
+                    <div class="text-grey">รหัส: {{ item.product_id }}</div>
+                    <div class="text-primary">{{ item.price }} บาท</div>
+                  </v-col>
+
+                  <!-- ปุ่มจำนวน -->
+                  <v-col cols="3" class="d-flex justify-center">
+                    <div
+                      class="d-flex align-center border rounded-lg pa-1"
+                      style="width: 140px; background-color: #f5f5f5"
+                    >
+                      <v-btn
+                        icon="mdi-minus"
+                        variant="text"
+                        @click="decrementItem(index)"
+                        size="small"
+                        :disabled="item.quantity <= 1"
+                        style="min-width: 32px; width: 32px"
+                      ></v-btn>
+
+                      <div
+                        class="flex-grow-1 d-flex justify-center align-center"
+                      >
+                        <input
+                          v-model.number="item.quantity"
+                          type="number"
+                          min="1"
+                          @input="validateQuantity(index)"
+                          style="
+                            width: 50px;
+                            text-align: center;
+                            border: none;
+                            outline: none;
+                            background: transparent;
+                            font-size: 14px;
+                            font-weight: 500;
+                            padding: 0;
+                            margin: 0;
+                          "
+                        />
+                      </div>
+
+                      <v-btn
+                        icon="mdi-plus"
+                        variant="text"
+                        @click="incrementItem(index)"
+                        size="small"
+                        style="min-width: 32px; width: 32px"
+                      ></v-btn>
+                    </div>
+                  </v-col>
+
+                  <!-- ราคารวม -->
+                  <v-col cols="2" class="text-center">
+                    <div class="text-success font-weight-bold">
+                      {{ (item.price * item.quantity).toLocaleString() }} บาท
+                    </div>
+                  </v-col>
+
+                  <!-- ปุ่มลบ -->
+                  <v-col cols="1" class="text-center">
+                    <v-btn
+                      icon="mdi-delete"
+                      variant="text"
+                      color="error"
+                      size="small"
+                      @click="removeFromCart(index)"
+                    ></v-btn>
+                  </v-col>
+                </v-row>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <!-- แสดงยอดรวม -->
+          <v-row v-if="carts.length > 0" class="mt-2">
+            <v-col cols="12" class="text-right">
+              <v-card color="primary" variant="tonal" class="pa-3">
+                <div class="font-weight-bold">
+                  ยอดรวมทั้งหมด: {{ totalAmount.toLocaleString() }} บาท
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-card-text>
+
+        <v-divider class="mt-4" />
+
+        <v-card-text>
+          <v-list-subheader class="mt-4">สินค้าทั้งหมด</v-list-subheader>
+          <v-row>
+            <v-col
+              cols="12"
+              sm="6"
+              md="3"
+              lg="3"
+              v-for="(data, index) in props.products"
+              :key="data.id"
+            >
+              <v-card class="mx-auto h-100" max-width="344">
+                <v-img height="200px" :src="data.image_url" contain></v-img>
+
+                <v-card-title class="text-wrap"> {{ data.name }} </v-card-title>
+
+                <v-card-subtitle> {{ data.description }} </v-card-subtitle>
+
+                <v-card-subtitle class="text-primary font-weight-bold">
+                  ราคา {{ data.price }} บาท
+                </v-card-subtitle>
+
+                <v-card-actions>
+                  <v-btn
+                    color="orange-lighten-2"
+                    text="สั่งซื้อ"
+                    @click="addProduct(data)"
+                    :disabled="isProductInCart(data.id)"
+                    block
+                  >
+                    {{
+                      isProductInCart(data.id) ? "อยู่ในตะกร้าแล้ว" : "สั่งซื้อ"
+                    }}
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-card-text>
+
+      </Form>
+
+      <!-- ปุ่มลอยมุมขวาล่าง -->
+      <div class="floating-buttons">
+        <v-btn 
+          text 
+          @click="handleCancel" 
+          :disabled="isSubmitting"
+          class="mr-2"
+        >
+          ยกเลิก
+        </v-btn>
+        <v-btn
+          color="primary"
+          :loading="isSubmitting"
+          :disabled="isSubmitting || carts.length === 0"
+          @click="handleFormSubmit"
+        >
+          บันทึกคำสั่งซื้อ ({{ carts.length }} รายการ)
+        </v-btn>
+      </div>
+    </v-card>
+  </v-dialog>
+</template>
+
+<script setup>
+import {
+  ref,
+  defineExpose,
+  defineProps,
+  defineEmits,
+  watch,
+  computed,
+} from "vue";
+import { Form, Field } from "vee-validate";
+import * as yup from "yup";
+import { alertSuccess, alertError } from "@/utils/alert";
+import api from "@/plugins/axios";
+
+const isOpen = ref(false);
+const isSubmitting = ref(false);
+const imagePreview = ref(null);
+const formRef = ref(null);
+const carts = ref([]);
+
+// เพิ่มสินค้าลงตะกร้า
+const addProduct = (data) => {
+  // ตรวจสอบว่าสินค้านี้อยู่ในตะกร้าแล้วหรือไม่
+  const existingItem = carts.value.find((item) => item.id === data.id);
+
+  if (!existingItem) {
+    // เพิ่ม quantity property เป็น 1 เมื่อเพิ่มสินค้าใหม่
+    carts.value.push({
+      ...data,
+      quantity: 1,
+    });
+  }
+};
+
+// เพิ่มจำนวนสินค้า
+const incrementItem = (index) => {
+  carts.value[index].quantity++;
+};
+
+// ลดจำนวนสินค้า
+const decrementItem = (index) => {
+  if (carts.value[index].quantity > 1) {
+    carts.value[index].quantity--;
+  }
+};
+
+// ตรวจสอบและแก้ไขจำนวนสินค้าให้ถูกต้อง
+const validateQuantity = (index) => {
+  const item = carts.value[index];
+  if (item.quantity < 1 || isNaN(item.quantity)) {
+    item.quantity = 1;
+  }
+  // ปัดเป็นจำนวนเต็ม
+  item.quantity = Math.floor(item.quantity);
+};
+
+// ลบสินค้าออกจากตะกร้า
+const removeFromCart = (index) => {
+  carts.value.splice(index, 1);
+};
+
+// ตรวจสอบว่าสินค้าอยู่ในตะกร้าแล้วหรือไม่
+const isProductInCart = (productId) => {
+  return carts.value.some((item) => item.id === productId);
+};
+
+// คำนวณยอดรวม
+const totalAmount = computed(() => {
+  return carts.value.reduce((total, item) => {
+    return total + item.price * item.quantity;
+  }, 0);
+});
+
+defineExpose({
+  isOpen,
+  openDialog: () => {
+    isOpen.value = true;
+  },
+  closeDialog: () => {
+    handleCancel();
+  },
+});
+
+const props = defineProps({
+  products: Array,
+  customers: Array,
+});
+
+const emit = defineEmits(["order-added", "dialog-closed"]);
+
+// แก้ไข validation schema เพื่อให้เหมาะกับ order form
+const schema = yup.object({
+  member_id: yup.string().required("กรุณาเลือกชื่อลูกค้า"),
+});
+
+// รีเซ็ตฟอร์ม
+const resetForm = () => {
+  if (formRef.value) {
+    formRef.value.resetForm();
+  }
+  carts.value = [];
+  imagePreview.value = null;
+};
+
+// จัดการการยกเลิก
+const handleCancel = () => {
+  resetForm();
+  isOpen.value = false;
+  emit("dialog-closed");
+};
+
+// เมื่อปิด dialog ให้รีเซ็ตฟอร์ม
+watch(isOpen, (newValue) => {
+  if (!newValue) {
+    resetForm();
+  }
+});
+
+// จัดการการกดปุ่มบันทึก - trigger form validation
+const handleFormSubmit = async () => {
+  if (formRef.value) {
+    // ใช้ validate แล้วถ้าผ่านค่อยเรียก onSubmit
+    const { valid } = await formRef.value.validate();
+    if (valid) {
+      const values = formRef.value.values;
+      await onSubmit(values);
+    }
+  }
+};
+
+const onSubmit = async (values) => {
+  if (carts.value.length === 0) {
+    alertError("กรุณาเลือกสินค้าอย่างน้อย 1 รายการ");
+    return;
+  }
+
+  isSubmitting.value = true;
+
+  try {
+    const orderData = {
+      member_id: values.member_id, // แก้ไขจาก values.id เป็น values.member_id
+      items: carts.value.map((item) => ({
+        product_id: item.id,
+        quantity: item.quantity,
+      })),
+    };
+
+    const res = await api.post("/orders/add", orderData);
+
+    alertSuccess(res.data.msg || "บันทึกคำสั่งซื้อสำเร็จ");
+    emit("order-added", res.data);
+    isOpen.value = false;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.msg ||
+      error.response?.data?.message ||
+      "เกิดข้อผิดพลาดในการบันทึกคำสั่งซื้อ";
+    alertError(errorMessage);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+</script>
+
+<style scoped>
+.floating-buttons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  gap: 8px;
+}
+</style>

@@ -21,7 +21,7 @@ export const alertError = (message) => {
 export const alertDelete = (message) => {
   return Swal.fire({
     title: "ยืนยันการลบ?",
-    text: `คุณต้องการลบข้อมูล ${message.member_id} หรือไม่?`,
+    text: `คุณต้องการลบข้อมูลหรือไม่?`,
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "ลบ",

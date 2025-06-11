@@ -4,6 +4,8 @@ import LoginPage from "@/views/LoginPage.vue";
 import DashboardPage from "@/views/DashboardPage.vue";
 import MainLayout from "@/layouts/MainLayout.vue";
 import CustomerPage from "@/views/CustomerPage.vue";
+import ProductPage from "@/views/ProductPage.vue";
+import OrderPage from "@/views/OrderPage.vue";
 
 const routes = [
   { path: "/login", component: LoginPage },
@@ -17,6 +19,18 @@ const routes = [
     path: "/customers",
     component: MainLayout,
     children: [{ path: "", component: CustomerPage }],
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/orders",
+    component: MainLayout,
+    children: [{ path: "", component: OrderPage }],
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/products",
+    component: MainLayout,
+    children: [{ path: "", component: ProductPage }],
     meta: { requiresAuth: true },
   },
 ];

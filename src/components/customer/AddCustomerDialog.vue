@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, defineExpose, defineProps } from "vue";
+import { ref, defineExpose, defineProps, defineEmits } from "vue";
 import { Form, Field } from "vee-validate";
 import * as yup from "yup";
 import { alertSuccess, alertError } from "@/utils/alert";
@@ -125,6 +125,9 @@ import api from "@/plugins/axios";
 
 const isOpen = ref(false);
 defineExpose({ isOpen });
+
+const emit = defineEmits(["product-added", "dialog-closed"]);
+
 const props = defineProps({
   provinces: Array,
 });
@@ -153,6 +156,7 @@ const onSubmit = async (values) => {
       birthdate: values.birthdate,
     });
     alertSuccess(res.msg);
+    emit("customer-added", res.data);
   } catch (error) {
     alertError(error.response.data.msg);
   }

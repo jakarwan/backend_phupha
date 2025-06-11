@@ -1,36 +1,36 @@
 <template>
   <!-- <v-container> -->
   <v-card class="min-h-[850px] mt-4 mx-4">
-    <div class="text-xl font-bold ma-4">รายการลูกค้า</div>
+    <div class="text-xl font-bold ma-4">รายการสินค้า</div>
     <v-card-title>
       <v-row>
         <v-col md="4">
           <v-text-field
             v-model="search"
-            label="ค้นหาลูกค้า"
+            label="ค้นหาสินค้า"
             hide-details
             variant="outlined"
             density="comfortable"
           />
         </v-col>
-        <v-col md="3">
+        <!-- <v-col md="3">
           <v-select
-            v-model="province_id"
-            :items="provinces"
-            label="จังหวัด"
-            item-title="name_th"
-            item-value="id"
+            v-model="type_id"
+            :items="types"
+            label="ประเภทสินค้า"
+            item-title="type_name"
+            item-value="type_id"
             variant="outlined"
             density="comfortable"
             clearable
           />
-        </v-col>
+        </v-col> -->
       </v-row>
       <div class="float-end">
         <v-btn @click="dialogRef.isOpen = true" color="indigo-darken-3"
-          >เพิ่มลูกค้า</v-btn
+          >เพิ่มสินค้า</v-btn
         >
-        <AddCustomerDialog ref="dialogRef" :provinces="provinces" @customer-added="handleCustomerAdded" />
+        <AddProductDialog ref="dialogRef" :types="types" @product-added="handleProductAdded" />
       </div>
     </v-card-title>
     <!-- :sort-by="sortBy" -->
@@ -40,36 +40,43 @@
         v-model:page="page"
         :items-length="total"
         :headers="headers"
-        :items="customers"
+        :items="products"
         :loading="loading"
         :search="search"
         class="elevation-1"
         :items-per-page-options="[10, 50, 100]"
-        @update:options="loadCustomers"
+        @update:options="loadProducts"
       >
         <template #item.index="{ index }">
           {{ index + 1 }}
+        </template>
+        <template #item.image="{ item }">
+          <v-img
+            :src="item.image_url"
+            max-width="50"
+            max-height="50"
+          />
         </template>
         <template #item.created_at="{ item }">
           {{ dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss") }}
         </template>
         <template #item.action="{ item }">
           <v-btn
-            @click="editCustomer(item)"
+            @click="editProduct(item)"
             size="x-small"
             class="mx-2"
             color="#5865f2"
             ><v-icon>mdi-pencil</v-icon></v-btn
           >
-          <v-btn @click="delCustomer(item)" size="x-small" color="error"
+          <v-btn @click="delProduct(item)" size="x-small" color="error"
             ><v-icon>mdi-delete</v-icon></v-btn
           >
         </template>
       </v-data-table-server>
-      <EditCustomerDialog
+      <EditProductDialog
         ref="dialogEditRef"
-        :provinces="provinces"
-        @updated="handleCustomerUpdated"
+        :types="types"
+        @updated="handleProductUpdated"
       />
     </div>
   </v-card>
@@ -79,13 +86,13 @@
 <script setup>
 import { onMounted, ref, watch } from "vue";
 import api from "@/plugins/axios";
-import AddCustomerDialog from "@/components/customer/AddCustomerDialog.vue";
-import EditCustomerDialog from "@/components/customer/EditCustomerDialog.vue";
+import AddProductDialog from "@/components/product/AddProductDialog.vue";
+import EditProductDialog from "@/components/product/EditProductDialog.vue";
 import dayjs from "dayjs";
 import { alertError, alertSuccess, alertDelete } from "@/utils/alert";
 
 // --- state
-const customers = ref([]);
+const products = ref([]);
 const total = ref(0);
 const loading = ref(false);
 const page = ref(1);
@@ -93,25 +100,25 @@ const itemsPerPage = ref(10);
 const search = ref("");
 const dialogRef = ref();
 const dialogEditRef = ref();
-const provinces = ref([]);
-const province_id = ref(null);
-const selectedCustomer = ref(null);
+const types = ref([]);
+// const type_id = ref(null);
+const selectedProducts = ref(null);
 // const sortBy = ref([{ key: "created_at", order: "desc" }]);
 
-const editCustomer = (item) => {
+const editProduct = (item) => {
   dialogEditRef.value.open(item);
 };
 
-const delCustomer = async (item) => {
+const delProduct = async (item) => {
   const confirm = await alertDelete(item);
   if (confirm.isConfirmed) {
     try {
-      const res = await api.delete("/customers/delete", {
+      const res = await api.delete("/products/delete", {
         data: { id: item.id },
       });
 
       alertSuccess(res.data.msg || "ลบข้อมูลเรียบร้อยแล้ว");
-      loadCustomers();
+      loadProducts();
     } catch (err) {
       alertError(err.response?.data?.msg || "เกิดข้อผิดพลาด");
     }
@@ -121,36 +128,37 @@ const delCustomer = async (item) => {
 // --- headers
 const headers = [
   { title: "#", key: "index", sortable: false },
-  { title: "รหัสลูกค้า", key: "member_id", sortable: false },
+  { title: "ภาพ", key: "image", sortable: false },
+  { title: "รหัสสินค้า", key: "product_id", sortable: false },
   {
-    title: "ชื่อ-สกุล",
-    key: "full_name",
+    title: "ชื่อสินค้า",
+    key: "name",
     sortable: false,
-    value: (item) => `${item.first_name} ${item.family_name}`,
   },
-  { title: "เบอร์โทร", key: "phone", sortable: false },
-  { title: "จังหวัด", key: "province", sortable: false },
-  { title: "วันที่สร้าง", key: "created_at", sortable: false },
+  { title: "คำอธิบายสินค้า", key: "description", sortable: false },
+  { title: "ราคาสินค้า", key: "price", sortable: false, align: "end" },
+  { title: "แต้มสินค้า", key: "point", sortable: false, align: "center" },
+  { title: "จำนวนสินค้า", key: "stock", sortable: false, align: "center" },
   { title: "action", key: "action", sortable: false, align: "center" },
 ];
 
 // --- load data from API
-const loadCustomers = async () => {
+const loadProducts = async () => {
   loading.value = true;
 
   try {
-    const { data } = await api.get("/customers/list", {
+    const { data } = await api.get("/products/list", {
       params: {
         page: page.value,
         per_page: itemsPerPage.value,
         search: search.value ? search.value : undefined,
-        province_id: province_id.value,
+        // type_id: type_id.value,
         // sort_by: sortBy.value[0]?.key || "",
         // sort_order: sortBy.value[0]?.order || "",
       },
     });
 
-    customers.value = data.data;
+    products.value = data.data;
     total.value = data.pagination.total;
   } catch (error) {
     alertError(error.response.data.msg);
@@ -159,13 +167,13 @@ const loadCustomers = async () => {
   }
 };
 
-const loadProvinces = async () => {
+const loadTypes = async () => {
   loading.value = true;
 
   try {
-    const { data } = await api.get("/address/provinces");
+    const { data } = await api.get("/types/list");
 
-    provinces.value = data;
+    types.value = data.data;
   } catch (e) {
     console.error("โหลดข้อมูลไม่สำเร็จ", e);
   } finally {
@@ -173,21 +181,21 @@ const loadProvinces = async () => {
   }
 };
 
-const handleCustomerUpdated = (updatedData) => {
-  loadCustomers();
+const handleProductUpdated = (updatedData) => {
+  loadProducts();
 };
 
-const handleCustomerAdded = (addedData) => {
-  loadCustomers();
-};
+const handleProductAdded = async (newProduct) => {
+  await loadProducts()
+}
 
 // --- watch search trigger load
-watch(province_id, () => {
-  page.value = 1; // reset page
-  loadCustomers();
-});
+// watch(type_id, () => {
+//   page.value = 1; // reset page
+//   loadProducts();
+// });
 
 onMounted(() => {
-  loadProvinces();
+  loadTypes();
 });
 </script>

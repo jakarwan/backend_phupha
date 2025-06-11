@@ -72,12 +72,10 @@ const handleLogin = async () => {
       username: username.value,
       password: password.value,
     });
-    console.log(res,'res')
     auth.login(res.data.token, res.data.user);
     alertSuccess("เข้าสู่ระบบสำเร็จ");
     router.push("/");
   } catch (error) {
-    console.log(error,'error')
     alertError(error.response.data.msg);
   }
 };

@@ -35,7 +35,7 @@
               <div
                 v-bind="props"
                 variant="text"
-                class="d-flex align-items-center text-white text-base select-none"
+                class="d-flex align-items-center text-white text-base select-none md:d-none"
               >
                 {{ user.first_name }} {{ user.family_name }}
                 <v-icon end>mdi-menu-down</v-icon>
@@ -80,6 +80,7 @@ const drawer = ref(true);
 const menuItems = [
   { title: "แดชบอร์ด", to: "/", icon: "mdi-view-dashboard" },
   { title: "รายชื่อลูกค้า", to: "/customers", icon: "mdi-account-group" },
-  // { title: "ตั้งค่า", to: "/settings", icon: "mdi-cog" },
+  { title: "รายการสั่งซื้อ", to: "/orders", icon: "mdi-cart-outline" },
+  { title: "รายชื่อสินค้า", to: "/products", icon: "mdi-shopping-outline" },
 ];
 </script>

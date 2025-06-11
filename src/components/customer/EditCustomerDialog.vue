@@ -181,11 +181,9 @@ const onSubmit = async (values) => {
       sp_id: values.sp_id,
       birthdate: values.birthdate,
     });
-    console.log(values,'values')
     emit("updated", values);
     alertSuccess(res.data.msg);
   } catch (error) {
-    console.log(error, "error");
     alertError(error.response.data.msg);
   }
   isOpen.value = false;
