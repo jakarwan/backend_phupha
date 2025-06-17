@@ -11,6 +11,7 @@
             hide-details
             variant="outlined"
             density="comfortable"
+            placeholder="รหัสลูกค้า, ชื่อลูกค้า, เบอร์โทร"
           />
         </v-col>
         <v-col md="3">
@@ -30,7 +31,11 @@
         <v-btn @click="dialogRef.isOpen = true" color="indigo-darken-3"
           >เพิ่มลูกค้า</v-btn
         >
-        <AddCustomerDialog ref="dialogRef" :provinces="provinces" @customer-added="handleCustomerAdded" />
+        <AddCustomerDialog
+          ref="dialogRef"
+          :provinces="provinces"
+          @customer-added="handleCustomerAdded"
+        />
       </div>
     </v-card-title>
     <!-- :sort-by="sortBy" -->
@@ -53,7 +58,16 @@
         <template #item.created_at="{ item }">
           {{ dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss") }}
         </template>
+        <template #item.point="{ item }">
+          <v-chip variant="elevated" color="indigo">{{ item.point }}</v-chip>
+        </template>
         <template #item.action="{ item }">
+          <v-btn @click="openHistory(item)" size="x-small" color="#919191">
+            <v-icon>mdi-history</v-icon>
+            <v-tooltip activator="parent" location="top">
+              ดูรายละเอียด
+            </v-tooltip>
+          </v-btn>
           <v-btn
             @click="editCustomer(item)"
             size="x-small"
@@ -71,6 +85,7 @@
         :provinces="provinces"
         @updated="handleCustomerUpdated"
       />
+      <CustomerHistoryDialog v-model="historyDialog" ref="historyDialogRef" />
     </div>
   </v-card>
   <!-- </v-container> -->
@@ -83,6 +98,7 @@ import AddCustomerDialog from "@/components/customer/AddCustomerDialog.vue";
 import EditCustomerDialog from "@/components/customer/EditCustomerDialog.vue";
 import dayjs from "dayjs";
 import { alertError, alertSuccess, alertDelete } from "@/utils/alert";
+import CustomerHistoryDialog from "@/components/customer/OrderHistoryDialog.vue";
 
 // --- state
 const customers = ref([]);
@@ -95,11 +111,16 @@ const dialogRef = ref();
 const dialogEditRef = ref();
 const provinces = ref([]);
 const province_id = ref(null);
-const selectedCustomer = ref(null);
+const historyDialog = ref(false);
+const historyDialogRef = ref();
 // const sortBy = ref([{ key: "created_at", order: "desc" }]);
 
 const editCustomer = (item) => {
   dialogEditRef.value.open(item);
+};
+
+const openHistory = (item) => {
+  historyDialogRef.value.open(item);
 };
 
 const delCustomer = async (item) => {
@@ -130,6 +151,7 @@ const headers = [
   },
   { title: "เบอร์โทร", key: "phone", sortable: false },
   { title: "จังหวัด", key: "province", sortable: false },
+  { title: "คะแนน", key: "point", sortable: false, align: "center" },
   { title: "วันที่สร้าง", key: "created_at", sortable: false },
   { title: "action", key: "action", sortable: false, align: "center" },
 ];

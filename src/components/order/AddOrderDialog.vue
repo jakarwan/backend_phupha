@@ -11,11 +11,15 @@
         <v-card-text>
           <v-row>
             <v-col cols="12" sm="12" md="12" lg="12">
-              <Field name="member_id" v-slot="{ field, errorMessage }">
-                <v-select
+              <Field
+                name="member_id"
+                v-slot="{ field, errorMessage, value, handleChange }"
+              >
+                <v-autocomplete
+                  :model-value="value"
+                  @update:model-value="handleChange"
                   :items="props.customers"
                   label="ชื่อลูกค้า"
-                  v-bind="field"
                   :item-title="
                     (item) => item.first_name + ' ' + item.family_name
                   "
@@ -24,7 +28,15 @@
                   required
                   variant="outlined"
                   clearable
-                ></v-select>
+                  :custom-filter="
+                    (value, query, item) => {
+                      const searchText = query.toLowerCase();
+                      const fullName =
+                        `${item.raw.first_name} ${item.raw.family_name}`.toLowerCase();
+                      return fullName.includes(searchText);
+                    }
+                  "
+                ></v-autocomplete>
               </Field>
             </v-col>
           </v-row>
@@ -38,14 +50,14 @@
               <v-card elevation="2" class="pa-3">
                 <v-row align="center">
                   <!-- ลำดับ -->
-                  <v-col cols="1" class="text-center" style="padding: 5px;">
+                  <v-col cols="1" class="text-center" style="padding: 5px">
                     <v-chip color="primary" size="small">{{
                       index + 1
                     }}</v-chip>
                   </v-col>
 
                   <!-- รูปภาพ -->
-                  <v-col cols="2" style="padding: 5px;">
+                  <v-col cols="2" style="padding: 5px">
                     <v-img
                       width="60px"
                       height="60px"
@@ -56,7 +68,7 @@
                   </v-col>
 
                   <!-- ข้อมูลสินค้า -->
-                  <v-col cols="3" style="padding: 5px;">
+                  <v-col cols="3" style="padding: 5px">
                     <div class="font-weight-bold">{{ item.name }}</div>
                     <div class="text-grey">รหัส: {{ item.product_id }}</div>
                     <div class="text-primary">{{ item.price }} บาท</div>
@@ -117,7 +129,7 @@
                   </v-col>
 
                   <!-- ปุ่มลบ -->
-                  <v-col cols="1" class="text-center" style="padding: 5px;">
+                  <v-col cols="1" class="text-center" style="padding: 5px">
                     <v-btn
                       icon="mdi-delete"
                       variant="text"
