@@ -11,6 +11,7 @@
             hide-details
             variant="outlined"
             density="comfortable"
+            placeholder="รหัสสินค้า, ชื่อสินค้า"
           />
         </v-col>
         <!-- <v-col md="3">
