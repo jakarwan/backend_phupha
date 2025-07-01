@@ -162,7 +162,10 @@
                 <v-col cols="3" style="padding: 5px">
                   <div class="font-weight-bold">{{ item.name }}</div>
                   <div class="text-grey">รหัส: {{ item.product_id }}</div>
-                  <div class="text-primary">{{ item.price }} บาท</div>
+                  <div class="text-primary">ราคาสูงสุด {{ item.max_price }} บาท</div>
+                  <div class="text-primary">
+                    ราคาต่ำสุด {{ item.min_price }} บาท
+                  </div>
                 </v-col>
 
                 <!-- ปุ่มจำนวน -->
@@ -211,8 +214,37 @@
 
                 <!-- ราคารวม -->
                 <v-col cols="2" class="text-center p-1">
+                  <div>ราคา</div>
+                  <div class="d-flex justify-center">
+                    <!-- <v-switch
+                      color="primary"
+                      inset
+                      v-model="ex11"
+                      :model-value="Boolean(item.status)"
+                      hide-details
+                    ></v-switch> -->
+                    <v-slider
+                      v-model="item.wholesale_price"
+                      :max="item.max_price"
+                      :min="item.min_price"
+                      :step="1"
+                      thumb-label="always"
+                      color="green"
+                      track-color="green-lighten-3"
+                      class="mt-8"
+                      hide-details
+                      readonly
+                    >
+                      <template v-slot:thumb-label="{ modelValue }">
+                        ฿{{ formatNumber(modelValue) }}
+                      </template>
+                    </v-slider>
+                  </div>
                   <div class="text-success font-weight-bold">
-                    {{ (item.price * item.quantity).toLocaleString() }} บาท
+                    {{
+                      (item.wholesale_price * item.quantity).toLocaleString()
+                    }}
+                    บาท
                   </div>
                 </v-col>
               </v-row>
@@ -265,6 +297,8 @@ const statusOptions = [
   { text: "ยกเลิก", value: "cancelled" },
 ];
 
+const ex11 = ["primary"];
+
 // Headers สำหรับตารางสินค้า
 // const itemHeaders = [
 //   { title: "รูปภาพ", key: "image", sortable: false },
@@ -293,16 +327,18 @@ const closeDialog = () => {
 
 const totalAmount = () => {
   let total = 0;
-  console.log(orderItems, "orderItems");
   orderItems.value.forEach((item) => {
-    total += item.price * item.quantity;
+    total += item.wholesale_price * item.quantity;
   });
   return total;
 };
 
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("th-TH").format(num);
+};
+
 // โหลดรายการสินค้าในคำสั่งซื้อ
 const loadOrderItems = async (orderId) => {
-  console.log(orderId, "orderId");
   loadingItems.value = true;
   try {
     const { data } = await api.get(`/orders/items`, {
@@ -329,8 +365,7 @@ const updateStatus = async () => {
       id: orderData.value.id,
       status: selectedStatus.value,
     });
-    
-    
+
     orderData.value.status = selectedStatus.value;
     emit("order-updated");
     closeDialog();

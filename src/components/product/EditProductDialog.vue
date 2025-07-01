@@ -48,11 +48,11 @@
                   ></v-select>
                 </Field>
               </v-col>
-              <v-col cols="12" sm="6" md="4" lg="4">
+              <v-col cols="12" sm="6" md="3" lg="3">
                 <Field name="price" v-slot="{ field, errorMessage, value }">
                   <v-text-field
                     v-bind="field"
-                    label="ราคา"
+                    label="ราคาสูงสุด"
                     placeholder="0.00"
                     :error-messages="errorMessage"
                     variant="outlined"
@@ -67,7 +67,28 @@
                   />
                 </Field>
               </v-col>
-              <v-col cols="12" sm="6" md="4" lg="4">
+              <v-col cols="12" sm="6" md="3" lg="3">
+                <Field
+                  name="wholesale_price"
+                  v-slot="{ field, errorMessage, value }"
+                >
+                  <v-text-field
+                    v-bind="field"
+                    label="ราคาต่ำสุด"
+                    placeholder="0.00"
+                    :error-messages="errorMessage"
+                    variant="outlined"
+                    type="text"
+                    min="0"
+                    step="0.01"
+                    suffix="บาท"
+                    :model-value="value"
+                    @update:model-value="field.onChange"
+                    @blur="field.onBlur"
+                  />
+                </Field>
+              </v-col>
+              <v-col cols="12" sm="6" md="3" lg="3">
                 <Field name="point" v-slot="{ field, errorMessage, value }">
                   <v-text-field
                     v-bind="field"
@@ -84,7 +105,7 @@
                   />
                 </Field>
               </v-col>
-              <v-col cols="12" sm="12" md="4" lg="4">
+              <v-col cols="12" sm="12" md="3" lg="3">
                 <Field name="stock" v-slot="{ field, errorMessage, value }">
                   <v-text-field
                     v-bind="field"
@@ -206,10 +227,19 @@ const schema = yup.object({
   price: yup
     .number()
     .typeError("ราคาต้องเป็นตัวเลข")
-    .required("กรุณากรอกราคาสินค้า")
+    .required("กรุณากรอกราคาสินค้าสูงสุด")
     .min(0.01, "ราคาต้องมากกว่า 0")
     .max(999999.99, "ราคาต้องไม่เกิน 999,999.99 บาท"),
-  type_id: yup.string().required("กรุณาเลือกประเภทสินค้า"),
+  wholesale_price: yup
+    .number()
+    .typeError("ราคาต้องเป็นตัวเลข")
+    .required("กรุณากรอกราคาสินค้าต่ำสุด")
+    .min(0.01, "ราคาต้องมากกว่า 0")
+    .max(999999.99, "ราคาต้องไม่เกิน 999,999.99 บาท"),
+  type_id: yup
+    .string()
+    .typeError("กรุณาเลือกประเภทสินค้า")
+    .required("กรุณาเลือกประเภทสินค้า"),
   point: yup
     .number()
     .typeError("คะแนนต้องเป็นตัวเลข")
@@ -233,21 +263,66 @@ const schema = yup.object({
   image_url: yup
     .mixed()
     .test("fileSize", "ขนาดไฟล์ต้องไม่เกิน 5MB", (value) => {
-      if (!value || !value[0]) return true;
-      return value[0].size <= 5 * 1024 * 1024; // 5MB
+      // ไม่มีค่า = ผ่าน (ไม่บังคับ)
+      if (!value) return true;
+      
+      // เป็น string (URL เดิม) = ผ่าน
+      if (typeof value === 'string') return true;
+      
+      // เป็น FileList ที่ว่าง = ผ่าน
+      if (value instanceof FileList && value.length === 0) return true;
+      
+      // เป็น Array ที่ว่าง = ผ่าน
+      if (Array.isArray(value) && value.length === 0) return true;
+      
+      // ตรวจสอบขนาดไฟล์
+      if (value instanceof File) {
+        return value.size <= 5 * 1024 * 1024;
+      }
+      if (Array.isArray(value) && value[0] instanceof File) {
+        return value[0].size <= 5 * 1024 * 1024;
+      }
+      if (value instanceof FileList && value[0] instanceof File) {
+        return value[0].size <= 5 * 1024 * 1024;
+      }
+      
+      return true;
     })
     .test(
       "fileType",
       "รองรับเฉพาะไฟล์รูปภาพ (JPEG, PNG, JPG, WebP)",
       (value) => {
-        if (!value || !value[0]) return true;
+        // ไม่มีค่า = ผ่าน
+        if (!value) return true;
+        
+        // เป็น string (URL เดิม) = ผ่าน
+        if (typeof value === 'string') return true;
+        
+        // เป็น FileList ที่ว่าง = ผ่าน
+        if (value instanceof FileList && value.length === 0) return true;
+        
+        // เป็น Array ที่ว่าง = ผ่าน
+        if (Array.isArray(value) && value.length === 0) return true;
+        
         const validTypes = [
           "image/jpeg",
           "image/png",
           "image/jpg",
           "image/webp",
         ];
-        return validTypes.includes(value[0].type);
+        
+        // ตรวจสอบประเภทไฟล์
+        if (value instanceof File) {
+          return validTypes.includes(value.type);
+        }
+        if (Array.isArray(value) && value[0] instanceof File) {
+          return validTypes.includes(value[0].type);
+        }
+        if (value instanceof FileList && value[0] instanceof File) {
+          return validTypes.includes(value[0].type);
+        }
+        
+        return true;
       }
     ),
 });
@@ -259,6 +334,7 @@ const open = (product) => {
     name: product.name || "",
     type_id: product.type_id || "",
     price: product.price,
+    wholesale_price: product.wholesale_price,
     point: product.point,
     description: product.description,
     stock: product.stock,
@@ -297,6 +373,7 @@ defineExpose({ open });
 // };
 
 const onSubmit = async (values) => {
+  isSubmitting.value = true;
   try {
     const formData = new FormData();
 
@@ -304,6 +381,7 @@ const onSubmit = async (values) => {
     formData.append("name", values.name);
     formData.append("type_id", values.type_id);
     formData.append("price", values.price);
+    formData.append("wholesale_price", values.wholesale_price);
     formData.append("point", values.point ?? "");
     formData.append("description", values.description ?? "");
     formData.append("stock", values.stock ?? "");
@@ -332,6 +410,8 @@ const onSubmit = async (values) => {
     alertSuccess(res.data.msg);
   } catch (error) {
     alertError(error.response?.data?.msg || "เกิดข้อผิดพลาด");
+  } finally {
+    isSubmitting.value = false;
   }
 
   isOpen.value = false;
@@ -358,5 +438,4 @@ const handleFileChange = (files) => {
     imagePreview.value = null;
   }
 };
-
 </script>

@@ -71,7 +71,10 @@
                   <v-col cols="3" style="padding: 5px">
                     <div class="font-weight-bold">{{ item.name }}</div>
                     <div class="text-grey">รหัส: {{ item.product_id }}</div>
-                    <div class="text-primary">{{ item.price }} บาท</div>
+                    <div class="text-primary">ราคาสูงสุด {{ item.price }} บาท</div>
+                    <div class="text-primary">
+                      ราคาต่ำสุด {{ item.wholesale_price }} บาท
+                    </div>
                   </v-col>
 
                   <!-- ปุ่มจำนวน -->
@@ -123,8 +126,35 @@
 
                   <!-- ราคารวม -->
                   <v-col cols="2" class="text-center p-1">
+                    <div>ราคาส่ง</div>
+                    <div class="d-flex justify-center">
+                      <!-- <v-switch
+                        color="primary"
+                        inset
+                        v-model="item.wholesalePrice"
+                        hide-details
+                      ></v-switch> -->
+                      <v-slider
+                        v-model="item.wholesalePrice"
+                        :max="item.price"
+                        :min="item.wholesale_price"
+                        :step="1"
+                        thumb-label="always"
+                        color="green"
+                        track-color="green-lighten-3"
+                        class="mt-8"
+                        hide-details
+                      >
+                        <template v-slot:thumb-label="{ modelValue }">
+                          ฿{{ formatNumber(modelValue) }}
+                        </template>
+                      </v-slider>
+                    </div>
                     <div class="text-success font-weight-bold">
-                      {{ (item.price * item.quantity).toLocaleString() }} บาท
+                      {{
+                        (item.wholesalePrice * item.quantity).toLocaleString()
+                      }}
+                      บาท
                     </div>
                   </v-col>
 
@@ -235,6 +265,7 @@ const isSubmitting = ref(false);
 const imagePreview = ref(null);
 const formRef = ref(null);
 const carts = ref([]);
+const wholesalePrice = ref(false);
 
 // เพิ่มสินค้าลงตะกร้า
 const addProduct = (data) => {
@@ -246,6 +277,7 @@ const addProduct = (data) => {
     carts.value.push({
       ...data,
       quantity: 1,
+      wholesalePrice: data.wholesale_price,
     });
   }
 };
@@ -285,7 +317,7 @@ const isProductInCart = (productId) => {
 // คำนวณยอดรวม
 const totalAmount = computed(() => {
   return carts.value.reduce((total, item) => {
-    return total + item.price * item.quantity;
+    return total + item.wholesalePrice * item.quantity;
   }, 0);
 });
 
@@ -360,6 +392,7 @@ const onSubmit = async (values) => {
       items: carts.value.map((item) => ({
         product_id: item.id,
         quantity: item.quantity,
+        wholesale_price: item.wholesalePrice,
       })),
     };
 
@@ -378,6 +411,11 @@ const onSubmit = async (values) => {
     isSubmitting.value = false;
   }
 };
+
+// Methods
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("th-TH").format(num);
+};
 </script>
 
 <style scoped>
@@ -389,5 +427,144 @@ const onSubmit = async (values) => {
   display: flex;
   gap: 8px;
   align-self: end;
+}
+
+/* Styled Card */
+.styled-card {
+  background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
+  border: 1px solid #e0e0e0;
+}
+
+/* Price Display */
+.price-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.price-box {
+  flex: 1;
+  text-align: center;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.price-box:hover {
+  border-color: #4caf50;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+}
+
+.price-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.price-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.price-separator {
+  color: #9e9e9e;
+}
+
+/* Custom Slider */
+.custom-slider :deep(.v-slider-track__fill) {
+  height: 6px !important;
+}
+
+.custom-slider :deep(.v-slider-track__background) {
+  height: 6px !important;
+}
+
+.custom-slider :deep(.v-slider-thumb) {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Price Marks */
+.price-marks {
+  position: relative;
+  height: 20px;
+  margin-top: 8px;
+}
+
+.price-mark {
+  position: absolute;
+  font-size: 11px;
+  color: #666;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Minimal Price Display */
+.minimal-price-display {
+  text-align: center;
+  padding: 16px;
+  background-color: #e8f5e9;
+  border-radius: 8px;
+}
+
+/* Histogram */
+.histogram-container {
+  height: 100px;
+  padding: 0 12px;
+}
+
+.histogram {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  gap: 2px;
+}
+
+.histogram-bar {
+  flex: 1;
+  min-height: 4px;
+  border-radius: 2px 2px 0 0;
+  transition: all 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .price-display {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .price-box {
+    width: 100%;
+  }
+
+  .price-separator {
+    transform: rotate(90deg);
+  }
+}
+
+/* Animations */
+.v-range-slider {
+  transition: all 0.3s ease;
+}
+
+.v-range-slider:hover :deep(.v-slider-track__fill) {
+  height: 8px !important;
+}
+
+.v-chip {
+  transition: all 0.2s ease;
+}
+
+.v-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 </style>

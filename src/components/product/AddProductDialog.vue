@@ -38,11 +38,11 @@
                   ></v-select>
                 </Field>
               </v-col>
-              <v-col cols="12" sm="6" md="4" lg="4">
+              <v-col cols="12" sm="6" md="3" lg="3">
                 <Field name="price" v-slot="{ field, errorMessage }">
                   <v-text-field
                     v-bind="field"
-                    label="ราคา"
+                    label="ราคาสูงสุด"
                     placeholder="0.00"
                     :error-messages="errorMessage"
                     variant="outlined"
@@ -54,7 +54,22 @@
                   />
                 </Field>
               </v-col>
-              <v-col cols="12" sm="6" md="4" lg="4">
+              <v-col cols="12" sm="6" md="3" lg="3">
+                <Field name="wholesale_price" v-slot="{ field, errorMessage }">
+                  <v-text-field
+                    v-bind="field"
+                    label="ราคาต่ำสุด"
+                    placeholder="0.00"
+                    :error-messages="errorMessage"
+                    variant="outlined"
+                    type="text"
+                    min="0"
+                    step="0.01"
+                    suffix="บาท"
+                  />
+                </Field>
+              </v-col>
+              <v-col cols="12" sm="6" md="3" lg="3">
                 <Field name="point" v-slot="{ field, errorMessage }">
                   <v-text-field
                     v-bind="field"
@@ -68,7 +83,7 @@
                   />
                 </Field>
               </v-col>
-              <v-col cols="12" sm="6" md="4" lg="4">
+              <v-col cols="12" sm="6" md="3" lg="3">
                 <Field name="stock" v-slot="{ field, errorMessage }">
                   <v-text-field
                     v-bind="field"
@@ -95,7 +110,7 @@
                   ></v-textarea>
                 </Field>
               </v-col>
-              <v-col cols="12" sm="6" md="12" lg="12">
+              <v-col cols="12" sm="12" md="12" lg="12">
                 <Field name="image_url" v-slot="{ errorMessage, handleChange }">
                   <v-file-input
                     label="รูปภาพสินค้า"
@@ -174,9 +189,9 @@ defineExpose({
 
 const props = defineProps({
   // categories: {
-    types: Array,
-    // default: () => [],
-    // required: true,
+  types: Array,
+  // default: () => [],
+  // required: true,
   // },
 });
 
@@ -192,7 +207,13 @@ const schema = yup.object({
   price: yup
     .number()
     .typeError("ราคาต้องเป็นตัวเลข")
-    .required("กรุณากรอกราคาสินค้า")
+    .required("กรุณากรอกราคาสินค้าสูงสุด")
+    .min(0.01, "ราคาต้องมากกว่า 0")
+    .max(999999.99, "ราคาต้องไม่เกิน 999,999.99 บาท"),
+  wholesale_price: yup
+    .number()
+    .typeError("ราคาต้องเป็นตัวเลข")
+    .required("กรุณากรอกราคาสินค้าต่ำสุด")
     .min(0.01, "ราคาต้องมากกว่า 0")
     .max(999999.99, "ราคาต้องไม่เกิน 999,999.99 บาท"),
   type_id: yup.string().required("กรุณาเลือกประเภทสินค้า"),
@@ -295,6 +316,10 @@ const onSubmit = async (values) => {
     formData.append("name", values.name);
     formData.append("description", values.description || "");
     formData.append("price", parseFloat(values.price).toString());
+    formData.append(
+      "wholesale_price",
+      parseFloat(values.wholesale_price).toString()
+    );
     formData.append(
       "point",
       values.point ? parseInt(values.point).toString() : "0"

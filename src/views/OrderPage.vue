@@ -210,7 +210,7 @@ const loadProducts = async () => {
 
 const loadCustomers = async () => {
   try {
-    const { data } = await api.get("/customers/list");
+    const { data } = await api.get("/customers");
     customers.value = data.data;
   } catch (error) {
     console.error("โหลดข้อมูลลูกค้าไม่สำเร็จ:", error);
