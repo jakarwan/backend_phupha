@@ -71,7 +71,9 @@
                   <v-col cols="3" style="padding: 5px">
                     <div class="font-weight-bold">{{ item.name }}</div>
                     <div class="text-grey">รหัส: {{ item.product_id }}</div>
-                    <div class="text-primary">ราคาสูงสุด {{ item.price }} บาท</div>
+                    <div class="text-primary">
+                      ราคาสูงสุด {{ item.price }} บาท
+                    </div>
                     <div class="text-primary">
                       ราคาต่ำสุด {{ item.wholesale_price }} บาท
                     </div>
@@ -150,12 +152,16 @@
                         </template>
                       </v-slider>
                     </div>
-                    <div class="text-success font-weight-bold">
+                    <span class="text-success font-weight-bold">
                       {{
                         (item.wholesalePrice * item.quantity).toLocaleString()
                       }}
                       บาท
-                    </div>
+                    </span>
+                    <span class="text-warning font-weight-bold">
+                      ({{ (item.point * item.quantity).toLocaleString() }}
+                      คะแนน)
+                    </span>
                   </v-col>
 
                   <!-- ปุ่มลบ -->
@@ -177,6 +183,9 @@
           <v-row v-if="carts.length > 0" class="mt-2">
             <v-col cols="12" class="text-right">
               <v-card color="primary" variant="tonal" class="pa-3">
+                <div class="font-weight-bold">
+                  คะแนนทั้งหมด: {{ totalPoint.toLocaleString() }} คะแนน
+                </div>
                 <div class="font-weight-bold">
                   ยอดรวมทั้งหมด: {{ totalAmount.toLocaleString() }} บาท
                 </div>
@@ -207,6 +216,9 @@
 
                 <v-card-subtitle class="text-primary font-weight-bold">
                   ราคา {{ data.price }} บาท
+                </v-card-subtitle>
+                <v-card-subtitle class="text-primary font-weight-bold">
+                  คะแนนสินค้า {{ data.point }} คะแนน
                 </v-card-subtitle>
 
                 <v-card-actions>
@@ -318,6 +330,13 @@ const isProductInCart = (productId) => {
 const totalAmount = computed(() => {
   return carts.value.reduce((total, item) => {
     return total + item.wholesalePrice * item.quantity;
+  }, 0);
+});
+
+// คำนวณยอดรวม
+const totalPoint = computed(() => {
+  return carts.value.reduce((total, item) => {
+    return total + item.point * item.quantity;
   }, 0);
 });
 

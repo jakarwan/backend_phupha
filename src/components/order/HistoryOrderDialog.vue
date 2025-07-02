@@ -162,9 +162,14 @@
                 <v-col cols="3" style="padding: 5px">
                   <div class="font-weight-bold">{{ item.name }}</div>
                   <div class="text-grey">รหัส: {{ item.product_id }}</div>
-                  <div class="text-primary">ราคาสูงสุด {{ item.max_price }} บาท</div>
+                  <div class="text-primary">
+                    ราคาสูงสุด {{ item.max_price }} บาท
+                  </div>
                   <div class="text-primary">
                     ราคาต่ำสุด {{ item.min_price }} บาท
+                  </div>
+                  <div class="text-warning">
+                    คะแนนสินค้า {{ item.product_point }} คะแนน
                   </div>
                 </v-col>
 
@@ -240,12 +245,16 @@
                       </template>
                     </v-slider>
                   </div>
-                  <div class="text-success font-weight-bold">
+                  <span class="text-success font-weight-bold">
                     {{
                       (item.wholesale_price * item.quantity).toLocaleString()
                     }}
                     บาท
-                  </div>
+                  </span>
+                  <span class="text-warning font-weight-bold">
+                    ({{ item.point.toLocaleString() }}
+                    คะแนน)
+                  </span>
                 </v-col>
               </v-row>
             </v-card>
@@ -256,6 +265,9 @@
         <v-row>
           <v-col cols="12" class="text-right">
             <v-card color="primary" variant="tonal" class="pa-3">
+              <div class="font-weight-bold">
+                คะแนนทั้งหมด: {{ totalPoint() }} คะแนน
+              </div>
               <div class="font-weight-bold">
                 ยอดรวมทั้งหมด: {{ totalAmount() }} บาท
               </div>
@@ -329,6 +341,15 @@ const totalAmount = () => {
   let total = 0;
   orderItems.value.forEach((item) => {
     total += item.wholesale_price * item.quantity;
+  });
+  return total;
+};
+
+// คำนวณยอดรวม
+const totalPoint = () => {
+  let total = 0;
+  orderItems.value.forEach((item) => {
+    total += item.point;
   });
   return total;
 };

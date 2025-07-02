@@ -21,6 +21,9 @@
               ชื่อลูกค้า: {{ customer.first_name }}
               {{ customer.family_name }}
             </div>
+            <div class="text-white mb-0" v-if="customer">
+              คะแนน: {{ customer.point }}
+            </div>
           </div>
           <v-spacer></v-spacer>
           <v-btn icon variant="text" @click="closeDialog" class="text-white">
@@ -210,7 +213,7 @@
                   <v-col cols="3" style="padding: 5px">
                     <div class="font-weight-bold">{{ item.name }}</div>
                     <div class="text-grey">รหัส: {{ item.product_id }}</div>
-                    <div class="text-primary">{{ item.price }} บาท</div>
+                    <div class="text-primary">{{ item.wholesale_price }} บาท</div>
                   </v-col>
 
                   <!-- ปุ่มจำนวน -->
@@ -262,7 +265,7 @@
                   <!-- ราคารวม -->
                   <v-col cols="2" class="text-center p-1">
                     <div class="text-success font-weight-bold">
-                      {{ (item.price * item.quantity).toLocaleString() }} บาท
+                      {{ (item.wholesale_price * item.quantity).toLocaleString() }} บาท <div class="text-warning">({{ item.point }} คะแนน)</div>
                     </div>
                   </v-col>
                 </v-row>
@@ -339,6 +342,7 @@ const headers = [
   { title: "เลขที่คำสั่งซื้อ", key: "order_id", sortable: false },
   { title: "วันที่", key: "created_at", sortable: false },
   { title: "สถานะ", key: "status", sortable: false },
+  { title: "คะแนนรวม", key: "point", sortable: false, align: "end" },
   { title: "ยอดรวม", key: "total_price", sortable: false, align: "end" },
   { title: "", key: "actions", sortable: false, align: "center" },
 ];
